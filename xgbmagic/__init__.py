@@ -27,6 +27,7 @@ class Xgb:
                 self.target_type = target_type
                 self.categorical_columns = categorical_columns
                 self.verbose = verbose
+                self.num_training_rounds = num_training_rounds
                 # init the classifier
                 if self.target_type == 'binary':
                     self.clf = XGBClassifier(
@@ -66,11 +67,11 @@ class Xgb:
             print "Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions)
             print "AUC Score (Train): %f" % metrics.roc_auc_score(self.df[self.target_column], train_df_predprob)
         elif self.target_type == 'linear':
-            model = grid_search.GridSearchCV(estimator = self.clf, param_grid=xgb_param, verbose=1,cv=4, scoring='mean_squared_error')
+            model = grid_search.GridSearchCV(estimator = self.clf, param_grid = {'max_depth':[5], 'n_estimators': [self.num_training_rounds]}, verbose=1,cv=4, scoring='mean_squared_error')
             model.fit(self.df[self.predictors], self.df[self.target_column])
             train_df_predictions = model.predict(self.df[self.predictors])
 
-            print "Accuracy : %.4g" % metrics.accuracy_score(self.df[target_column].values, train_df_predictions)
+            print "Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions)
 
     def predict(self, test_df):
         test_df = self.preprocess(test_df)
