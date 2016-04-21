@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='xgbmagic',
-      version='0.1',
+      version='0.0.1',
       description='Data preprocessing and analysis using XGBoost',
       url='http://github.com/mirri66/xgbmagic',
       author='Grace Tang',
@@ -9,8 +9,6 @@ setup(name='xgbmagic',
       license='MIT',
       packages=['xgbmagic'],
       install_requires=[
-          'xgboost',
-          'seaborn',
           'pandas',
           'numpy',
           'sklearn'

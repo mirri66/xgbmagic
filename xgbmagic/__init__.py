@@ -1,3 +1,4 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
 from xgboost.sklearn import XGBClassifier, XGBRegressor
 import xgboost as xgb
 import pandas as pd
@@ -6,11 +7,9 @@ import seaborn as sns
 import numpy as np
 from sklearn import grid_search, metrics
 
-
-
 class Xgb:
     def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], num_training_rounds=500, verbose=1):
-    	"""
+        """
         input params:
         - df (DataFrame): dataframe of training data
         - target_column (string): name of target column
@@ -18,7 +17,7 @@ class Xgb:
         - target_type (string): 'linear' or 'binary'
         - categorical_columns (list): list of column names of categorical data. Will perform one-hot encoding
         - verbose (bool): verbosity of printouts
-    	"""
+        """
         if type(df) == pd.core.frame.DataFrame:
             self.df = df
             if target_column:
@@ -41,15 +40,15 @@ class Xgb:
                 elif self.target_type == 'linear':
                     self.clf = XGBRegressor()
             else:
-                print 'please provide target column name'
+                print('please provide target column name')
         else:
-            print 'please provide pandas dataframe'
+            print('please provide pandas dataframe')
 
     def train(self):
-        print '#### preprocessing ####'
+        print('#### preprocessing ####')
         self.df = self.preprocess(self.df)
 
-        print '#### training ####'
+        print('#### training ####')
         self.predictors = [x for x in self.df.columns if x not in [self.target_column, self.id_column]]
         xgb_param = self.clf.get_xgb_params()
 
@@ -64,22 +63,25 @@ class Xgb:
             train_df_predictions = self.clf.predict(self.df[self.predictors])
             train_df_predprob = self.clf.predict_proba(self.df[self.predictors])[:,1]
 
-            print "Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions)
-            print "AUC Score (Train): %f" % metrics.roc_auc_score(self.df[self.target_column], train_df_predprob)
+            print("Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions))
+            print("AUC Score (Train): %f" % metrics.roc_auc_score(self.df[self.target_column], train_df_predprob))
         elif self.target_type == 'linear':
             model = grid_search.GridSearchCV(estimator = self.clf, param_grid = {'max_depth':[5], 'n_estimators': [self.num_training_rounds]}, verbose=1,cv=4, scoring='mean_squared_error')
             model.fit(self.df[self.predictors], self.df[self.target_column])
             train_df_predictions = model.predict(self.df[self.predictors])
+            self.clf = model
 
-            print "Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions)
+            print("Mean squared error: %.4g" % metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions))
 
     def predict(self, test_df):
+        print('### predicting ###')
+        print('## preprocessing test set')
         test_df = self.preprocess(test_df)
         return self.clf.predict(test_df[self.predictors])
 
 
     def feature_importance(self):
-        feature_importance = sorted(self.clf.booster().get_fscore().items(), key = operator.itemgetter(1), reverse=True)
+        feature_importance = sorted(list(self.clf.booster().get_fscore().items()), key = operator.itemgetter(1), reverse=True)
         impt = pd.DataFrame(feature_importance)
         impt.columns = ['feature', 'importance']
         impt[:10].plot("feature", "importance", kind="barh", color=sns.color_palette("deep", 3))
@@ -88,16 +90,16 @@ class Xgb:
     def preprocess(self, df, train=True):
         self.cols_to_remove = []
         # one hot encoding of categorical variables
-        print '## one hot encoding of categorical variables'
+        print('## one hot encoding of categorical variables')
         for col in self.categorical_columns:
             if self.verbose:
-                print 'one hot encoding: ', col
+                print('one hot encoding: ', col)
             df = pd.concat([df, pd.get_dummies(df[col]).rename(columns=lambda x: col+'_'+str(x))], axis=1)
             df = df.drop([col], axis=1)
 
         if train:
             # drop columns that are too sparse to be informative
-            print '## dropping columns below sparsity threshold'
+            print('## dropping columns below sparsity threshold')
             for col in df.columns:
                 nan_cnt = 0
                 for x in df[col]:
@@ -108,34 +110,34 @@ class Xgb:
                         pass
                 if nan_cnt/float(len(df[col])) > 0.6: # arbitrary cutoff, if more than 60% missing then drop
                     if self.verbose:
-                        print 'will drop', col
+                        print('will drop', col)
                     self.cols_to_remove.append(col)
 
             # drop columns that have no standard deviation (not informative)
-            print '## dropping columns with no variation'
+            print('## dropping columns with no variation')
             for col in df.columns:
                 if df[col].dtype == 'int64' or df[col].dtype == 'float64':
                     if df[col].std() == 0:
-                        print 'will drop', col
+                        print('will drop', col)
                         self.cols_to_remove.append(col)
         if self.verbose and self.cols_to_remove:
-            print 'dropping the following columns:', self.cols_to_remove
+            print('dropping the following columns:', self.cols_to_remove)
             df = df.drop(self.cols_to_remove, axis=1)
 
         if self.verbose:
-            print '## DataFrame shape is now:', df.shape
+            print('## DataFrame shape is now:', df.shape)
 
         # convert to numerical where possible
-        print '## converting numerical data to numeric dtype'
+        print('## converting numerical data to numeric dtype')
         df = df.convert_objects(convert_numeric=True)
 
         # drop all those that are object type
-        print '## dropping non-numerical columns'
+        print('## dropping non-numerical columns')
         for col in df.columns:
             if df[col].dtype == 'int64' or df[col].dtype == 'float64' or df[col].dtype == 'bool':
                 pass
             else:
                 if self.verbose:
-                    print 'dropping because not int, float, or bool:', col
+                    print('dropping because not int, float, or bool:', col)
                 df = df.drop([col], axis=1)
         return df
