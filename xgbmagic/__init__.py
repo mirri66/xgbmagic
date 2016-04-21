@@ -8,7 +8,7 @@ import numpy as np
 from sklearn import grid_search, metrics
 
 class Xgb:
-    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], num_training_rounds=500, verbose=1):
+    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=50):
         """
         input params:
         - df (DataFrame): dataframe of training data
@@ -20,6 +20,7 @@ class Xgb:
         """
         if type(df) == pd.core.frame.DataFrame:
             self.df = df
+            self.early_stopping_rounds = early_stopping_rounds
             if target_column:
                 self.target_column = target_column
                 self.id_column = id_column
@@ -29,6 +30,7 @@ class Xgb:
                 self.num_training_rounds = num_training_rounds
                 # init the classifier
                 if self.target_type == 'binary':
+                    self.scoring = 'auc'
                     self.clf = XGBClassifier(
                         learning_rate =0.1,
                         n_estimators = num_training_rounds,
@@ -38,6 +40,7 @@ class Xgb:
                         scale_pos_weight = 1,
                         seed = 123)
                 elif self.target_type == 'linear':
+                    self.scoring = 'rmse'
                     self.clf = XGBRegressor(
                             n_estimators = num_training_rounds,
                             objective = 'reg:linear'
@@ -55,29 +58,28 @@ class Xgb:
         self.predictors = [x for x in self.df.columns if x not in [self.target_column, self.id_column]]
         xgb_param = self.clf.get_xgb_params()
 
-        if self.target_type == 'binary':
-            xgtrain  = xgb.DMatrix(self.df[self.predictors], label=self.df[self.target_column], missing=np.nan)
+        xgtrain  = xgb.DMatrix(self.df[self.predictors], label=self.df[self.target_column], missing=np.nan)
+        try:
             cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                metrics=['auc'], early_stopping_rounds=5, show_progress=self.verbose)
-            self.clf.set_params(n_estimators=cvresult.shape[0])
-            self.clf.fit(self.df[self.predictors], self.df[self.target_column],eval_metric='auc')
+                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, show_progress=self.verbose)
+        except:
+            try:
+                cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
+            except:
+                cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
+        self.clf.set_params(n_estimators=cvresult.shape[0])
+        self.clf.fit(self.df[self.predictors], self.df[self.target_column],eval_metric=self.scoring)
 
-            #Predict training set:
-            train_df_predictions = self.clf.predict(self.df[self.predictors])
+        #Predict training set:
+        train_df_predictions = self.clf.predict(self.df[self.predictors])
+
+        if self.target_type == 'binary':
             train_df_predprob = self.clf.predict_proba(self.df[self.predictors])[:,1]
-
             print("Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions))
             print("AUC Score (Train): %f" % metrics.roc_auc_score(self.df[self.target_column], train_df_predprob))
         elif self.target_type == 'linear':
-            xgtrain  = xgb.DMatrix(self.df[self.predictors], label=self.df[self.target_column], missing=np.nan)
-            cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                metrics=['rmse'], early_stopping_rounds=5, show_progress=self.verbose)
-            self.clf.set_params(n_estimators=cvresult.shape[0])
-
-            #model = grid_search.GridSearchCV(estimator = self.clf, param_grid = {'max_depth':[5], 'n_estimators': [self.num_training_rounds]}, verbose=1,cv=4, scoring='mean_squared_error')
-            self.clf.fit(self.df[self.predictors], self.df[self.target_column], eval_metric='rmse')
-            train_df_predictions = self.clf.predict(self.df[self.predictors])
-
             print("Mean squared error: %f" % metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions))
             print("Root mean squared error: %f" % np.sqrt(metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions)))
 
