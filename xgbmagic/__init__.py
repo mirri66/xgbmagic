@@ -72,6 +72,7 @@ class Xgb:
             self.clf = model
 
             print("Mean squared error: %.4g" % metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions))
+            print("Root mean squared error: %.4g" % np.sqrt(metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions)))
 
     def predict(self, test_df):
         print('### predicting ###')
