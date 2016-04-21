@@ -1,7 +1,9 @@
 # xgbmagic
-xgbmagic takes a pandas dataframe and uses XGBoost to train a model.
-
-Performs one-hot encoding for categorical features, and drops uninformative features.
+xgbmagic takes a automatically runs a standard workflow for using XGBoost to train a model based on a pandas dataframe.
+- performs one-hot encoding for categorical features, 
+- drops uninformative features (no variability, too many missing values...)
+- trains the model
+- plots most important features
 
 ## Documentation
 Input parameters:
