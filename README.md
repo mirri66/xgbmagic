@@ -5,6 +5,14 @@ xgbmagic takes a automatically runs a standard workflow for using XGBoost to tra
 - trains the model
 - plots most important features
 
+## Installation
+Install xgboost first
+```
+git clone --recursive https://github.com/dmlc/xgboost
+cd xgboost; make -j4
+```
+
+
 ## Documentation
 Input parameters:
 * df (DataFrame): pandas dataframe
