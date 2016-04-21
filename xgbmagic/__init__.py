@@ -38,7 +38,10 @@ class Xgb:
                         scale_pos_weight = 1,
                         seed = 123)
                 elif self.target_type == 'linear':
-                    self.clf = XGBRegressor()
+                    self.clf = XGBRegressor(
+                            n_estimators = num_training_rounds,
+                            objective = 'reg:linear'
+                            )
             else:
                 print('please provide target column name')
         else:
@@ -66,13 +69,17 @@ class Xgb:
             print("Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions))
             print("AUC Score (Train): %f" % metrics.roc_auc_score(self.df[self.target_column], train_df_predprob))
         elif self.target_type == 'linear':
-            model = grid_search.GridSearchCV(estimator = self.clf, param_grid = {'max_depth':[5], 'n_estimators': [self.num_training_rounds]}, verbose=1,cv=4, scoring='mean_squared_error')
-            model.fit(self.df[self.predictors], self.df[self.target_column])
-            train_df_predictions = model.predict(self.df[self.predictors])
-            self.clf = model
+            xgtrain  = xgb.DMatrix(self.df[self.predictors], label=self.df[self.target_column], missing=np.nan)
+            cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+                metrics=['rmse'], early_stopping_rounds=5, show_progress=self.verbose)
+            self.clf.set_params(n_estimators=cvresult.shape[0])
 
-            print("Mean squared error: %.4g" % metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions))
-            print("Root mean squared error: %.4g" % np.sqrt(metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions)))
+            #model = grid_search.GridSearchCV(estimator = self.clf, param_grid = {'max_depth':[5], 'n_estimators': [self.num_training_rounds]}, verbose=1,cv=4, scoring='mean_squared_error')
+            self.clf.fit(self.df[self.predictors], self.df[self.target_column], eval_metric='rmse')
+            train_df_predictions = self.clf.predict(self.df[self.predictors])
+
+            print("Mean squared error: %f" % metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions))
+            print("Root mean squared error: %f" % np.sqrt(metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions)))
 
     def predict(self, test_df):
         print('### predicting ###')
@@ -83,8 +90,10 @@ class Xgb:
 
     def feature_importance(self):
         feature_importance = sorted(list(self.clf.booster().get_fscore().items()), key = operator.itemgetter(1), reverse=True)
+
         impt = pd.DataFrame(feature_importance)
         impt.columns = ['feature', 'importance']
+        print(impt[:10])
         impt[:10].plot("feature", "importance", kind="barh", color=sns.color_palette("deep", 3))
 
 
