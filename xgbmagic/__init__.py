@@ -8,7 +8,7 @@ import numpy as np
 from sklearn import grid_search, metrics
 
 class Xgb:
-    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=50):
+    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
         """
         input params:
         - df (DataFrame): dataframe of training data
@@ -86,7 +86,7 @@ class Xgb:
     def predict(self, test_df):
         print('### predicting ###')
         print('## preprocessing test set')
-        test_df = self.preprocess(test_df)
+        test_df = self.preprocess(test_df, train=False)
         return self.clf.predict(test_df[self.predictors])
 
 
@@ -100,7 +100,6 @@ class Xgb:
 
 
     def preprocess(self, df, train=True):
-        self.cols_to_remove = []
         # one hot encoding of categorical variables
         print('## one hot encoding of categorical variables')
         for col in self.categorical_columns:
@@ -109,8 +108,10 @@ class Xgb:
             df = pd.concat([df, pd.get_dummies(df[col]).rename(columns=lambda x: col+'_'+str(x))], axis=1)
             df = df.drop([col], axis=1)
 
+        # if training, determine columns to be removed
         if train:
             # drop columns that are too sparse to be informative
+            self.cols_to_remove = []
             print('## dropping columns below sparsity threshold')
             for col in df.columns:
                 nan_cnt = 0
