@@ -53,3 +53,8 @@ xgb.write_csv('output-xgbmagic.csv')
 
 ## Issues
 Please report issues and feedback [here](https://github.com/mirri66/xgbmagic/issues)
+
+## To do
+- detect highly correlated columns and remove redundant columns
+- remove categorical features with too many possible category values (to remove unhelpful features like names and ids)
+- parameter tuning with GridsearchCV
