@@ -1,10 +1,13 @@
 import xgbmagic
 import pandas as pd
+import pickle
 
 df = pd.read_csv('train.csv')
 
-xgb = xgbmagic.Xgb(df, target_column='target', id_column='id', categorical_columns=['category_one', 'category_two'], num_training_rounds=100, target_type='binary')
+xgb = xgbmagic.Xgb(df, target_column='TARGET', id_column='ID', categorical_columns=[], num_training_rounds=1000, target_type='binary', early_stopping_rounds=50)
 xgb.train()
-print(xgb.predict(df))
-print(xgb.feature_importance())
 
+test_df = pd.read_csv('test.csv')
+print(xgb.feature_importance())
+output = xgb.predict(test_df)
+xgb.write_csv('output-xgbmagic.csv')
