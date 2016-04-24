@@ -3,12 +3,17 @@
 
 The feature engineering step (creating new features and selectively removing unwanted features) is the most creative and fun step of training a model, whereas what follows is usually a standard data-processing flow.
 
-Once you're done engineering your features, xgbmagic automatically runs a standard workflow for using XGBoost to train a model on a pandas dataframe.
+Once you're done engineering your features, xgbmagic automatically runs a standard workflow for using XGBoost to train a model on a pandas dataframe, providing a first look at the usefulness of your features.
 - performs one-hot encoding for categorical features, 
 - drops uninformative features (no variability, too many missing values...)
 - trains the model
 - plots the most important features in order of importance.
 
+#### To do
+- detect highly correlated columns and remove redundant columns
+- remove categorical features with too many possible category values (to remove unhelpful features like names and ids)
+- parameter tuning with GridsearchCV
+- allow custom values for more parameters
 
 ## Installation
 Install xgboost first
@@ -54,7 +59,3 @@ xgb.write_csv('output-xgbmagic.csv')
 ## Issues
 Please report issues and feedback [here](https://github.com/mirri66/xgbmagic/issues)
 
-## To do
-- detect highly correlated columns and remove redundant columns
-- remove categorical features with too many possible category values (to remove unhelpful features like names and ids)
-- parameter tuning with GridsearchCV
