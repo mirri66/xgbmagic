@@ -3,7 +3,7 @@
 
 The feature engineering step (creating new features and selectively removing unwanted features) is the most creative and fun step of training a model, whereas what follows is usually a standard data-processing flow.
 
-Once you're done engineering your features, xgbmagic automatically runs a standard workflow for using XGBoost to train a model on a pandas dataframe, providing a first look at the usefulness of your features.
+Once you're done engineering your features, xgbmagic automatically runs a standard workflow for using XGBoost to train a model on a pandas dataframe.
 - performs one-hot encoding for categorical features, 
 - drops uninformative features (no variability, too many missing values...)
 - trains the model
