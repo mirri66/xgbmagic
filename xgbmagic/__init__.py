@@ -87,9 +87,11 @@ class Xgb:
     def predict(self, test_df):
         print('### predicting ###')
         print('## preprocessing test set')
-        test_df = self.preprocess(test_df, train=False)
-        self.test_df = test_df
-        self.output = self.clf.predict(test_df[self.predictors])
+        self.test_df = self.preprocess(test_df, train=False)
+        if self.target_type == 'binary':
+            self.output = self.clf.predict_proba(self.test_df[self.predictors])[:,1]
+        elif self.target_type == 'linear':
+            self.output = self.clf.predict(self.test_df[self.predictors])
         return self.output
 
     def feature_importance(self):
@@ -163,8 +165,9 @@ class Xgb:
         """
         with open(filename, 'wb') as csvfile:
             writer = csv.writer(csvfile)
+            writer.writerow([self.id_column, self.target_column])
             for idx, value in enumerate(self.output):
                 test_id = self.test_df['ID'][idx]
-                test_output = value
+                test_output = self.output[idx]
                 writer.writerow([test_id, test_output])
 
