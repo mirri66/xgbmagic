@@ -32,15 +32,23 @@ Input parameters:
 * verbose (boolean): verbosity of printouts. True = verbose
 
 
-## Examples
+## Example
 ```
 import xgbmagic
 import pandas as pd
+import pickle
 
-train_df = pd.read_csv('train.csv')
-xgb = xgbmagic.Xgb(train_df)
+df = pd.read_csv('train.csv')
+
+target_type = 'binary'
+
+xgb = xgbmagic.Xgb(df, target_column='TARGET', id_column='ID', categorical_columns=[], num_training_rounds=1000, target_type=target_type, early_stopping_rounds=50)
 xgb.train()
-xgb.predict()
+
+test_df = pd.read_csv('test.csv')
+print(xgb.feature_importance())
+output = xgb.predict(test_df)
+xgb.write_csv('output-xgbmagic.csv')
 ```
 
 ## Issues
