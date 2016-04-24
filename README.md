@@ -41,7 +41,6 @@ Input parameters:
 ```
 import xgbmagic
 import pandas as pd
-import pickle
 
 df = pd.read_csv('train.csv')
 
