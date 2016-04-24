@@ -6,6 +6,7 @@ import operator
 import seaborn as sns
 import numpy as np
 from sklearn import grid_search, metrics
+import unicodecsv as csv
 
 class Xgb:
     def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
@@ -87,8 +88,9 @@ class Xgb:
         print('### predicting ###')
         print('## preprocessing test set')
         test_df = self.preprocess(test_df, train=False)
-        return self.clf.predict(test_df[self.predictors])
-
+        self.test_df = test_df
+        self.output = self.clf.predict(test_df[self.predictors])
+        return self.output
 
     def feature_importance(self):
         feature_importance = sorted(list(self.clf.booster().get_fscore().items()), key = operator.itemgetter(1), reverse=True)
@@ -154,3 +156,15 @@ class Xgb:
                     print('dropping because not int, float, or bool:', col)
                 df = df.drop([col], axis=1)
         return df
+
+    def write_csv(self, filename):
+        """
+        write results to csv
+        """
+        with open(filename, 'wb') as csvfile:
+            writer = csv.writer(csvfile)
+            for idx, value in enumerate(self.output):
+                test_id = self.test_df['ID'][idx]
+                test_output = value
+                writer.writerow([test_id, test_output])
+
