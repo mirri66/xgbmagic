@@ -30,6 +30,9 @@ class Xgb:
                 self.id_column = id_column
                 self.target_type = target_type
                 self.categorical_columns = categorical_columns
+                self.int_columns = int_columns
+                self.float_columns = float_columns
+                self.drop_columns = drop_columns
                 self.verbose = verbose
                 self.num_training_rounds = num_training_rounds
                 # init the classifier
@@ -153,8 +156,9 @@ class Xgb:
         #df = df.convert_objects(convert_numeric=True)
 
         # convert columns specified to be int and float
-        df[int_columns] = df[int_columns].astype(int)
-        df[float_columns] = df[float_columns].astype(float)
+        df[self.int_columns] = df[self.int_columns].astype(int)
+        df[self.float_columns] = df[self.float_columns].astype(float)
+        df = df.drop(self.drop_columns, axis=1)
 
         # drop all those that are object type
         print('## dropping non-numerical columns')

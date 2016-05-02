@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='xgbmagic',
-      version='0.0.1.6',
+      version='0.0.1.8',
       description='Data preprocessing and analysis using XGBoost',
       url='http://github.com/mirri66/xgbmagic',
       author='Grace Tang',
