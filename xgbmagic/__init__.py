@@ -9,7 +9,7 @@ from sklearn import grid_search, metrics
 import unicodecsv as csv
 
 class Xgb:
-    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
+    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], int_columns=[], float_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
         """
         input params:
         - df (DataFrame): dataframe of training data
@@ -17,6 +17,9 @@ class Xgb:
         - id_column (string): name of id column
         - target_type (string): 'linear' or 'binary'
         - categorical_columns (list): list of column names of categorical data. Will perform one-hot encoding
+        - drop_columns (list): list of columns to drop
+        - int_columns (list): list of columns to convert to int
+        - float_columns (list): list of columns to convert to float
         - verbose (bool): verbosity of printouts
         """
         if type(df) == pd.core.frame.DataFrame:
@@ -146,8 +149,12 @@ class Xgb:
             print('## DataFrame shape is now:', df.shape)
 
         # convert to numerical where possible
-        print('## converting numerical data to numeric dtype')
-        df = df.convert_objects(convert_numeric=True)
+        #print('## converting numerical data to numeric dtype')
+        #df = df.convert_objects(convert_numeric=True)
+
+        # convert columns specified to be int and float
+        df[int_columns] = df[int_columns].astype(int)
+        df[float_columns] = df[float_columns].astype(float)
 
         # drop all those that are object type
         print('## dropping non-numerical columns')
