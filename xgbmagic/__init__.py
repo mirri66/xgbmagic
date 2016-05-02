@@ -94,13 +94,14 @@ class Xgb:
             self.output = self.clf.predict(self.test_df[self.predictors])
         return self.output
 
-    def feature_importance(self):
+    def feature_importance(self, num_print=10, display=True):
         feature_importance = sorted(list(self.clf.booster().get_fscore().items()), key = operator.itemgetter(1), reverse=True)
 
         impt = pd.DataFrame(feature_importance)
         impt.columns = ['feature', 'importance']
-        print(impt[:10])
-        impt[:10].plot("feature", "importance", kind="barh", color=sns.color_palette("deep", 3))
+        print(impt[:num_print])
+        if display:
+            impt[:num_print].plot("feature", "importance", kind="barh", color=sns.color_palette("deep", 3))
 
 
     def preprocess(self, df, train=True):
