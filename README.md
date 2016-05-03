@@ -9,6 +9,11 @@ Once you're done engineering your features, xgbmagic automatically runs a standa
 - trains the model
 - plots the most important features in order of importance.
 
+#### To do
+- detect highly correlated columns and remove redundant columns
+- remove categorical features with too many possible category values (to remove unhelpful features like names and ids)
+- parameter tuning with GridsearchCV
+- allow custom values for more parameters
 
 ## Installation
 Install xgboost first
@@ -36,7 +41,6 @@ Input parameters:
 ```
 import xgbmagic
 import pandas as pd
-import pickle
 
 df = pd.read_csv('train.csv')
 
@@ -53,3 +57,4 @@ xgb.write_csv('output-xgbmagic.csv')
 
 ## Issues
 Please report issues and feedback [here](https://github.com/mirri66/xgbmagic/issues)
+
