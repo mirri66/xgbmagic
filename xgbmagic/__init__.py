@@ -156,8 +156,10 @@ class Xgb:
         #df = df.convert_objects(convert_numeric=True)
 
         # convert columns specified to be int and float
-        df[self.int_columns] = df[self.int_columns].astype(int)
-        df[self.float_columns] = df[self.float_columns].astype(float)
+        for col in self.int_columns:
+            df[col] =  df.apply(self._to_int, axis=1)
+        for col in self.float_columns:
+            df[col] = df.apply(self._to_float, axis=1) #df[self.float_columns].astype(float)
         df = df.drop(self.drop_columns, axis=1)
 
         # drop all those that are object type
@@ -170,6 +172,18 @@ class Xgb:
                     print('dropping because not int, float, or bool:', col)
                 df = df.drop([col], axis=1)
         return df
+
+    def _to_int(self, num):
+        try:
+            return int(num)
+        except:
+            return
+
+    def _to_float(self, num):
+        try:
+            return float(num)
+        except:
+            return
 
     def write_csv(self, filename):
         """
