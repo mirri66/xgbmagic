@@ -9,7 +9,7 @@ from sklearn import grid_search, metrics
 import unicodecsv as csv
 
 class Xgb:
-    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], int_columns=[], float_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
+    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], numeric_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
         """
         input params:
         - df (DataFrame): dataframe of training data
@@ -18,8 +18,7 @@ class Xgb:
         - target_type (string): 'linear' or 'binary'
         - categorical_columns (list): list of column names of categorical data. Will perform one-hot encoding
         - drop_columns (list): list of columns to drop
-        - int_columns (list): list of columns to convert to int
-        - float_columns (list): list of columns to convert to float
+        - numeric_columns (list): list of columns to convert to numeric
         - verbose (bool): verbosity of printouts
         """
         if type(df) == pd.core.frame.DataFrame:
@@ -30,8 +29,7 @@ class Xgb:
                 self.id_column = id_column
                 self.target_type = target_type
                 self.categorical_columns = categorical_columns
-                self.int_columns = int_columns
-                self.float_columns = float_columns
+                self.numeric_columns = numeric_columns
                 self.drop_columns = drop_columns
                 self.verbose = verbose
                 self.num_training_rounds = num_training_rounds
@@ -93,7 +91,15 @@ class Xgb:
     def predict(self, test_df):
         print('### predicting ###')
         print('## preprocessing test set')
+        ids = test_df[self.id_column]
+        targets = test_df[self.target_column]
         self.test_df = self.preprocess(test_df, train=False)
+        self.test_df[self.id_column] = ids
+        self.test_df[self.target_column] = targets
+        for col in self.predictors:
+            if col not in self.test_df.columns:
+                self.test_df[col] = np.nan
+
         if self.target_type == 'binary':
             self.output = self.clf.predict_proba(self.test_df[self.predictors])[:,1]
         elif self.target_type == 'linear':
@@ -156,10 +162,12 @@ class Xgb:
         #df = df.convert_objects(convert_numeric=True)
 
         # convert columns specified to be int and float
-        for col in self.int_columns:
-            df[col] =  df.apply(self._to_int, axis=1)
-        for col in self.float_columns:
-            df[col] = df.apply(self._to_float, axis=1) #df[self.float_columns].astype(float)
+        for col in self.numeric_columns:
+            if self.verbose:
+                print('converting', col)
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            if self.verbose:
+                print(df[col].dtype)
         df = df.drop(self.drop_columns, axis=1)
 
         # drop all those that are object type
@@ -185,15 +193,22 @@ class Xgb:
         except:
             return
 
-    def write_csv(self, filename):
+    def write_csv(self, filename, include_actual=False):
         """
         write results to csv
+        - include actual: if actual values are known for test set, and we want to print them
         """
         with open(filename, 'wb') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow([self.id_column, self.target_column])
+            headers = [self.id_column, self.target_column]
+            if include_actual:
+                headers.append('actual')
+            writer.writerow(headers)
             for idx, value in enumerate(self.output):
-                test_id = self.test_df['ID'][idx]
+                test_id = self.test_df[self.id_column][idx]
                 test_output = self.output[idx]
-                writer.writerow([test_id, test_output])
+                to_write = [test_id, test_output]
+                if include_actual:
+                    to_write.append(self.test_df[self.target_column][idx])
+                writer.writerow(to_write)
 
