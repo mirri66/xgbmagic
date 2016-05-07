@@ -7,6 +7,7 @@ import seaborn as sns
 import numpy as np
 from sklearn import grid_search, metrics
 import unicodecsv as csv
+from sklearn.externals import joblib
 
 class Xgb:
     def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], numeric_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
@@ -91,11 +92,15 @@ class Xgb:
     def predict(self, test_df):
         print('### predicting ###')
         print('## preprocessing test set')
-        ids = test_df[self.id_column]
-        targets = test_df[self.target_column]
+        if self.id_column in test_df:
+            ids = test_df[self.id_column]
+        if self.target_column in test_df.columns:
+            targets = test_df[self.target_column]
         self.test_df = self.preprocess(test_df, train=False)
-        self.test_df[self.id_column] = ids
-        self.test_df[self.target_column] = targets
+        if self.id_column in test_df:
+            self.test_df[self.id_column] = ids
+        if self.target_column in test_df.columns:
+            self.test_df[self.target_column] = targets
         for col in self.predictors:
             if col not in self.test_df.columns:
                 self.test_df[col] = np.nan
@@ -212,3 +217,5 @@ class Xgb:
                     to_write.append(self.test_df[self.target_column][idx])
                 writer.writerow(to_write)
 
+    def save(self, filename='xgb.pkl'):
+        joblib.dump(self, filename)

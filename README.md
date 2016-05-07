@@ -33,7 +33,9 @@ Input parameters:
 * target_column (string): name of column containing the target parameter
 * id_column (string): name of column containing IDs
 * target_type (string): 'binary' for binary targets (classification), 'linear' for continuous targets (linear regression)
-* categorical_columns (list of strings): a list of column names of columns containing categorical data
+* categorical_columns (list of strings): a list of names of columns containing categorical data
+* numerical_columns (list of strings): a list of names of columns containing numerical data
+* drop_columns (list of strings): a list of names of columns to drop
 * verbose (boolean): verbosity of printouts. True = verbose
 
 
@@ -42,17 +44,34 @@ Input parameters:
 import xgbmagic
 import pandas as pd
 
+# read the training data
 df = pd.read_csv('train.csv')
 
+# for logistic regression, target_type is 'binary'
 target_type = 'binary'
 
-xgb = xgbmagic.Xgb(df, target_column='TARGET', id_column='ID', categorical_columns=[], num_training_rounds=1000, target_type=target_type, early_stopping_rounds=50)
+# set columns that are categorical, numeric, and to be dropped here.
+xgb = xgbmagic.Xgb(df, target_column='TARGET', id_column='ID', target_type=target_type, categorical_columns=[], drop_columns=[], numeric_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=50)
 xgb.train()
 
+# use the model to predict values for the test set
 test_df = pd.read_csv('test.csv')
 print(xgb.feature_importance())
 output = xgb.predict(test_df)
+
+# write to csv
 xgb.write_csv('output-xgbmagic.csv')
+
+# save model
+xgb.save('xgbmodel.pkl')
+
+# load model
+from sklearn.externals import joblib
+xgb = joblib.load('xgbmodel.pkl')
+
+
+
+
 ```
 
 ## Issues
