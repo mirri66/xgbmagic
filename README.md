@@ -26,7 +26,10 @@ Then install xgbmagic
 ```
 pip install xgbmagic
 ```
-
+Then you may also need two extra package:
+```
+pip install seaborn unicodecsv
+```
 ## Documentation
 Input parameters:
 * df (DataFrame): pandas dataframe
