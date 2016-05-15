@@ -11,6 +11,8 @@ setup(name='xgbmagic',
       install_requires=[
           'pandas',
           'numpy',
-          'sklearn'
+          'sklearn',
+          'seaborn',
+          'unicodecsv'
       ],
       zip_safe=False)
