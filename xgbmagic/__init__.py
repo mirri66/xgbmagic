@@ -168,11 +168,14 @@ class Xgb:
 
         # convert columns specified to be int and float
         for col in self.numeric_columns:
-            if self.verbose:
-                print('converting', col)
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-            if self.verbose:
-                print(df[col].dtype)
+            if col not in self.cols_to_remove:
+                if self.verbose:
+                    print('converting', col)
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+                if self.verbose:
+                    print(df[col].dtype)
+
+        # drop those marked for dropping
         df = df.drop(self.drop_columns, axis=1)
 
         # drop all those that are object type
