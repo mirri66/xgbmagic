@@ -9,6 +9,10 @@ Once you're done engineering your features, xgbmagic automatically runs a standa
 - trains the model
 - plots the most important features in order of importance.
 
+New features:
+- allows for training on random sample(s) - e.g. if you'd like to train a subset of your data
+- allows for training multiple times on different subsamples, then returning average/consensus from all models as the prediction
+
 #### To do
 - detect highly correlated columns and remove redundant columns
 - remove categorical features with too many possible category values (to remove unhelpful features like names and ids)
@@ -37,6 +41,9 @@ Input parameters:
 * numerical_columns (list of strings): a list of names of columns containing numerical data
 * drop_columns (list of strings): a list of names of columns to drop
 * verbose (boolean): verbosity of printouts. True = verbose
+* sample_fraction (float, 0-1): if this is not 1, a subsample of the data will be used to train the model
+* n_samples (int): if this is more than 1, this number of models will be trained, each iteration trained on a subsample of data (size of sample determined by sample_fraction). Note that if n_samples * sample_fraction is more than one, the maximum number of models will be trained based on how many samples we can get from the stated sample_fraction (e.g. if sample_fraction = 0.2, the maximum by number of samples will be 5)
+* prefix (string): prefix for names of the output files
 
 
 ## Example
