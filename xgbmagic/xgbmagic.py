@@ -11,7 +11,7 @@ from sklearn.externals import joblib
 import random, copy
 
 class Xgb:
-    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], numeric_columns=[], num_training_rounds=500, verbose=1, sample_fraction=1.0, n_samples=1, early_stopping_rounds=None, prefix='xgb_model'):
+    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], numeric_columns=[], num_training_rounds=500, verbose=1, sample_fraction=1.0, n_samples=1, early_stopping_rounds=None, prefix='xgb_model', scoring=None):
         """
         input params:
         - df (DataFrame): dataframe of training data
@@ -51,8 +51,8 @@ class Xgb:
                 self.n_samples = n_samples
                 self.num_training_rounds = num_training_rounds
                 self.prefix = prefix
-                # init the classifier
-                if self.target_type == 'binary':
+                # init the classifier:
+                if self.target_type == 'binary' or self.target_type == 'multiclass':
                     self.scoring = 'auc'
                     self.clf = XGBClassifier(
                         learning_rate =0.1,
@@ -68,6 +68,9 @@ class Xgb:
                             n_estimators = num_training_rounds,
                             objective = 'reg:linear'
                             )
+                # if preferred scoring metric is stated:
+                if scoring:
+                    self.scoring = scoring
             else:
                 print('please provide target column name')
         else:
@@ -89,23 +92,19 @@ class Xgb:
         print(df_list)
         for idx, current_df in enumerate(df_list):
             print('ITERATION ' + str(idx) + ' of ' + str(self.n_samples) +', sample_fraction=' + str(self.sample_fraction))
-            print(current_df.head())
             xgtrain  = xgb.DMatrix(current_df[self.predictors], label=current_df[self.target_column], missing=np.nan)
-            print(xgtrain)
-#            try:
-#            cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=clf.get_params()['n_estimators'], nfold=5,
-#                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, show_progress=self.verbose)
-#            except:
-#                try:
+        try:
             cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
-#                except:
-#                    cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-#                        metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
-            print(cvresult)
+                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, show_progress=self.verbose)
+        except:
+            try:
+                cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
+            except:
+                cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
             self.clf.set_params(n_estimators=cvresult.shape[0])
             self.clf.fit(current_df[self.predictors], current_df[self.target_column], eval_metric=self.scoring)
-            print(self.clf)
 
             #Predict training set:
             train_df_predictions = self.clf.predict(current_df[self.predictors])
@@ -120,7 +119,7 @@ class Xgb:
             filename = self.prefix + '_' + str(idx) + '.pkl'
             self.save(filename)
 
-    def predict(self, test_df):
+    def predict(self, test_df, return_multi_outputs=False):
         print('### predicting ###')
         print('## preprocessing test set')
         if self.id_column in test_df:
@@ -154,9 +153,14 @@ class Xgb:
         # average the outputs if n_samples is more than one
         if self.n_samples == 1:
             self.output = output
+            self.multi_outputs = [list(output)]
         else:
             self.output = np.mean(output_list, axis=0)
-        return self.output
+            self.multi_outputs = output_list
+        if return_multi_outputs:
+            return self.multi_outputs
+        else:
+            return self.output
 
     def feature_importance(self, num_print=10, display=True):
         feature_importance = sorted(list(self.clf.booster().get_fscore().items()), key = operator.itemgetter(1), reverse=True)
