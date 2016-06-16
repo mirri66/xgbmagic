@@ -18,6 +18,7 @@ New features:
 - remove categorical features with too many possible category values (to remove unhelpful features like names and ids)
 - parameter tuning with GridsearchCV
 - allow custom values for more parameters
+- when in multiple subsample training mode, return a measure of agreement between models
 
 ## Installation
 Install xgboost first
@@ -44,6 +45,9 @@ Input parameters:
 * sample_fraction (float, 0-1): if this is not 1, a subsample of the data will be used to train the model
 * n_samples (int): if this is more than 1, this number of models will be trained, each iteration trained on a subsample of data (size of sample determined by sample_fraction). Note that if n_samples * sample_fraction is more than one, the maximum number of models will be trained based on how many samples we can get from the stated sample_fraction (e.g. if sample_fraction = 0.2, the maximum by number of samples will be 5)
 * prefix (string): prefix for names of the output files
+
+predict(test_df, return_multi_outputs)
+* return_multi_outputs (boolean): if True, returns one set of outputs per model trained on a distinct subsample
 
 
 ## Example
