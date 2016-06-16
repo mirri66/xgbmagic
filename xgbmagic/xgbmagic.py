@@ -8,9 +8,10 @@ import numpy as np
 from sklearn import grid_search, metrics
 import unicodecsv as csv
 from sklearn.externals import joblib
+import random, copy
 
 class Xgb:
-    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], numeric_columns=[], num_training_rounds=500, verbose=1, early_stopping_rounds=None):
+    def __init__(self, df, target_column='', id_column='', target_type='binary', categorical_columns=[], drop_columns=[], numeric_columns=[], num_training_rounds=500, verbose=1, sample_fraction=1.0, n_samples=1, early_stopping_rounds=None, prefix='xgb_model'):
         """
         input params:
         - df (DataFrame): dataframe of training data
@@ -22,6 +23,19 @@ class Xgb:
         - numeric_columns (list): list of columns to convert to numeric
         - verbose (bool): verbosity of printouts
         """
+        # checks for sampling
+        sample_fraction = float(sample_fraction)
+        if sample_fraction > 1:
+            sample_fraction = 1.0
+        if sample_fraction * n_samples > 1:
+            n_samples = round(1.0/sample_fraction)
+        if sample_fraction <= 0:
+            print('sample_fraction 0 or negative, switching to 0.1')
+            sample_fraction = 0.1
+        # if sample_fraction is results in sample smaller than 1
+        if round(sample_fraction * len(df)) == 0:
+            sample_fraction = 1.0/len(df)
+        # check if data is dataframe
         if type(df) == pd.core.frame.DataFrame:
             self.df = df
             self.early_stopping_rounds = early_stopping_rounds
@@ -33,7 +47,10 @@ class Xgb:
                 self.numeric_columns = numeric_columns
                 self.drop_columns = drop_columns
                 self.verbose = verbose
+                self.sample_fraction = sample_fraction
+                self.n_samples = n_samples
                 self.num_training_rounds = num_training_rounds
+                self.prefix = prefix
                 # init the classifier
                 if self.target_type == 'binary':
                     self.scoring = 'auc'
@@ -64,30 +81,44 @@ class Xgb:
         self.predictors = [x for x in self.df.columns if x not in [self.target_column, self.id_column]]
         xgb_param = self.clf.get_xgb_params()
 
-        xgtrain  = xgb.DMatrix(self.df[self.predictors], label=self.df[self.target_column], missing=np.nan)
-        try:
+        # if subsampling
+        if self.sample_fraction == 1.0:
+            df_list = [self.df]
+        else:
+            df_list = self.random_sample(df=self.df, fraction=self.sample_fraction, n_samples=self.n_samples)
+        print(df_list)
+        for idx, current_df in enumerate(df_list):
+            print('ITERATION ' + str(idx) + ' of ' + str(self.n_samples) +', sample_fraction=' + str(self.sample_fraction))
+            print(current_df.head())
+            xgtrain  = xgb.DMatrix(current_df[self.predictors], label=current_df[self.target_column], missing=np.nan)
+            print(xgtrain)
+#            try:
+#            cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=clf.get_params()['n_estimators'], nfold=5,
+#                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, show_progress=self.verbose)
+#            except:
+#                try:
             cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, show_progress=self.verbose)
-        except:
-            try:
-                cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
-            except:
-                cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
-        self.clf.set_params(n_estimators=cvresult.shape[0])
-        self.clf.fit(self.df[self.predictors], self.df[self.target_column],eval_metric=self.scoring)
+                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
+#                except:
+#                    cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+#                        metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
+            print(cvresult)
+            self.clf.set_params(n_estimators=cvresult.shape[0])
+            self.clf.fit(current_df[self.predictors], current_df[self.target_column], eval_metric=self.scoring)
+            print(self.clf)
 
-        #Predict training set:
-        train_df_predictions = self.clf.predict(self.df[self.predictors])
+            #Predict training set:
+            train_df_predictions = self.clf.predict(current_df[self.predictors])
 
-        if self.target_type == 'binary':
-            train_df_predprob = self.clf.predict_proba(self.df[self.predictors])[:,1]
-            print("Accuracy : %.4g" % metrics.accuracy_score(self.df[self.target_column].values, train_df_predictions))
-            print("AUC Score (Train): %f" % metrics.roc_auc_score(self.df[self.target_column], train_df_predprob))
-        elif self.target_type == 'linear':
-            print("Mean squared error: %f" % metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions))
-            print("Root mean squared error: %f" % np.sqrt(metrics.mean_squared_error(self.df[self.target_column].values, train_df_predictions)))
+            if self.target_type == 'binary':
+                train_df_predprob = self.clf.predict_proba(current_df[self.predictors])[:,1]
+                print("Accuracy : %.4g" % metrics.accuracy_score(current_df[self.target_column].values, train_df_predictions))
+                print("AUC Score (Train): %f" % metrics.roc_auc_score(current_df[self.target_column], train_df_predprob))
+            elif self.target_type == 'linear':
+                print("Mean squared error: %f" % metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions))
+                print("Root mean squared error: %f" % np.sqrt(metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions)))
+            filename = self.prefix + '_' + str(idx) + '.pkl'
+            self.save(filename)
 
     def predict(self, test_df):
         print('### predicting ###')
@@ -105,10 +136,26 @@ class Xgb:
             if col not in self.test_df.columns:
                 self.test_df[col] = np.nan
 
-        if self.target_type == 'binary':
-            self.output = self.clf.predict_proba(self.test_df[self.predictors])[:,1]
-        elif self.target_type == 'linear':
-            self.output = self.clf.predict(self.test_df[self.predictors])
+        # prediction
+        print('## predicting from test set')
+        output_list = []
+        for idx, ns in enumerate(range(self.n_samples)):
+            if self.n_samples == 1:
+                xgb = self
+            else:
+                filename = self.prefix + '_' + str(idx) + '.pkl'
+                xgb = self.load(filename)
+
+            if self.target_type == 'binary':
+                output = xgb.clf.predict_proba(self.test_df[self.predictors])[:,1]
+            elif self.target_type == 'linear':
+                output = xgb.clf.predict(self.test_df[self.predictors])
+            output_list.append(list(output))
+        # average the outputs if n_samples is more than one
+        if self.n_samples == 1:
+            self.output = output
+        else:
+            self.output = np.mean(output_list, axis=0)
         return self.output
 
     def feature_importance(self, num_print=10, display=True):
@@ -198,6 +245,34 @@ class Xgb:
         except:
             return
 
+    def random_sample(self, df, fraction=0.2, n_samples=None):
+        """
+        splits into random samples
+        - n_samples: how many samples you want returned (default = All)
+        - fraction : what fraction of data to include in the sample (default = 0.2)
+        """
+        print('constructing random samples')
+        num_rows = len(df)
+        len_sample = round(fraction * num_rows)
+        # create list of slice index lists
+        indices = range(0,num_rows)
+        slice_list = []
+        tmp_idx_list = []
+        while len(indices) > 0:
+            while len(tmp_idx_list) < len_sample and len(indices) > 0:
+                idx = indices.pop(random.randrange(len(indices)))
+                tmp_idx_list.append(idx)
+            slice_list.append(tmp_idx_list)
+            tmp_idx_list = []
+        # get slices
+        sample_list = []
+        for s in range(n_samples):
+            try:
+                sample_list.append(df.loc[slice_list[s],:])
+            except:
+                pass
+        return sample_list
+
     def write_csv(self, filename, include_actual=False):
         """
         write results to csv
@@ -219,3 +294,8 @@ class Xgb:
 
     def save(self, filename='xgb.pkl'):
         joblib.dump(self, filename)
+
+    def load(self, model_file='xgb.pkl'):
+        xgb = joblib.load(model_file)
+        return xgb
+
