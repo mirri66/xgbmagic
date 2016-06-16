@@ -43,6 +43,8 @@ class TestXGB(unittest.TestCase):
         output = xgb.predict(test_df)
         print 'OUTPUT', output
         self.assertTrue(len(output) == len(test_dict['id']))
+        multi_outputs = xgb.predict(test_df, return_multi_outputs=True)
+        self.assertTrue(len(multi_outputs) == xgb.n_samples)
 
     def test_binary(self):
         print(bin_train_df.head())
