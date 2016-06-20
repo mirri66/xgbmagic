@@ -93,31 +93,31 @@ class Xgb:
         for idx, current_df in enumerate(df_list):
             print('ITERATION ' + str(idx) + ' of ' + str(self.n_samples) +', sample_fraction=' + str(self.sample_fraction))
             xgtrain  = xgb.DMatrix(current_df[self.predictors], label=current_df[self.target_column], missing=np.nan)
-        try:
-            cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, show_progress=self.verbose)
-        except:
             try:
                 cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
+                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, show_progress=self.verbose)
             except:
-                cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
-                    metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
-            self.clf.set_params(n_estimators=cvresult.shape[0])
-            self.clf.fit(current_df[self.predictors], current_df[self.target_column], eval_metric=self.scoring)
+                try:
+                    cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+                        metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
+                except:
+                    cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
+                        metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
+                self.clf.set_params(n_estimators=cvresult.shape[0])
+                self.clf.fit(current_df[self.predictors], current_df[self.target_column], eval_metric=self.scoring)
 
-            #Predict training set:
-            train_df_predictions = self.clf.predict(current_df[self.predictors])
+                #Predict training set:
+                train_df_predictions = self.clf.predict(current_df[self.predictors])
 
-            if self.target_type == 'binary':
-                train_df_predprob = self.clf.predict_proba(current_df[self.predictors])[:,1]
-                print("Accuracy : %.4g" % metrics.accuracy_score(current_df[self.target_column].values, train_df_predictions))
-                print("AUC Score (Train): %f" % metrics.roc_auc_score(current_df[self.target_column], train_df_predprob))
-            elif self.target_type == 'linear':
-                print("Mean squared error: %f" % metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions))
-                print("Root mean squared error: %f" % np.sqrt(metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions)))
-            filename = self.prefix + '_' + str(idx) + '.pkl'
-            self.save(filename)
+                if self.target_type == 'binary':
+                    train_df_predprob = self.clf.predict_proba(current_df[self.predictors])[:,1]
+                    print("Accuracy : %.4g" % metrics.accuracy_score(current_df[self.target_column].values, train_df_predictions))
+                    print("AUC Score (Train): %f" % metrics.roc_auc_score(current_df[self.target_column], train_df_predprob))
+                elif self.target_type == 'linear':
+                    print("Mean squared error: %f" % metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions))
+                    print("Root mean squared error: %f" % np.sqrt(metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions)))
+                filename = self.prefix + '_' + str(idx) + '.pkl'
+                self.save(filename)
 
     def predict(self, test_df, return_multi_outputs=False):
         print('### predicting ###')
@@ -142,14 +142,16 @@ class Xgb:
             if self.n_samples == 1:
                 xgb = self
             else:
-                filename = self.prefix + '_' + str(idx) + '.pkl'
-                xgb = self.load(filename)
-
-            if self.target_type == 'binary':
-                output = xgb.clf.predict_proba(self.test_df[self.predictors])[:,1]
-            elif self.target_type == 'linear':
-                output = xgb.clf.predict(self.test_df[self.predictors])
-            output_list.append(list(output))
+                try:
+                    filename = self.prefix + '_' + str(idx) + '.pkl'
+                    xgb = self.load(filename)
+                    if self.target_type == 'binary':
+                        output = xgb.clf.predict_proba(self.test_df[self.predictors])[:,1]
+                    elif self.target_type == 'linear':
+                        output = xgb.clf.predict(self.test_df[self.predictors])
+                    output_list.append(list(output))
+                except IOError:
+                    print('no file found, skipping')
         # average the outputs if n_samples is more than one
         if self.n_samples == 1:
             self.output = output
