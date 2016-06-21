@@ -119,7 +119,7 @@ class Xgb:
                 filename = self.prefix + '_' + str(idx) + '.pkl'
                 self.save(filename)
 
-    def predict(self, test_df, return_multi_outputs=False):
+    def predict(self, test_df, return_multi_outputs=False, return_mean_std=False):
         print('### predicting ###')
         print('## preprocessing test set')
         if self.id_column in test_df:
@@ -161,6 +161,8 @@ class Xgb:
             self.multi_outputs = output_list
         if return_multi_outputs:
             return self.multi_outputs
+        elif return_mean_std:
+            return (self.output, np.std(output_list, axis=0))
         else:
             return self.output
 
