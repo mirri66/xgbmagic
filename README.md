@@ -9,9 +9,10 @@ Once you're done engineering your features, xgbmagic automatically runs a standa
 - trains the model
 - plots the most important features in order of importance.
 
-New features:
+#### New features!
+*Iterate faster with smaller samples! Improve accuracy with ensemble learning (bagging)!*
 - allows for training on random sample(s) - e.g. if you'd like to train a subset of your data
-- allows for training multiple times on different subsamples, then returning average/consensus from all models as the prediction
+- allows for training multiple times on different subsamples, then returning average/consensus from all models as the prediction (bagging)
 
 #### To do
 - detect highly correlated columns and remove redundant columns
