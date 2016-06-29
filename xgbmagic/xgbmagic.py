@@ -142,6 +142,10 @@ class Xgb:
         for idx, ns in enumerate(range(self.n_samples)):
             if self.n_samples == 1:
                 xgb = self
+                if self.target_type == 'binary':
+                    output = xgb.clf.predict_proba(self.test_df[self.predictors])[:,1]
+                elif self.target_type == 'linear':
+                    output = xgb.clf.predict(self.test_df[self.predictors])
             else:
                 try:
                     filename = self.prefix + '_' + str(idx) + '.pkl'
@@ -156,9 +160,9 @@ class Xgb:
         # average the outputs if n_samples is more than one
         if self.n_samples == 1:
             self.output = output
-            if output:
+            try:
                 self.multi_outputs = [list(output)]
-            else:
+            except:
                 self.multi_outputs = None
         else:
             self.output = np.mean(output_list, axis=0)
@@ -304,6 +308,7 @@ class Xgb:
                     if include_actual:
                         to_write.append(self.test_df[self.target_column][idx])
                     writer.writerow(to_write)
+                print('results written to ' + filename)
             except:
                 print('write_csv failed')
 
