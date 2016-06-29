@@ -156,7 +156,10 @@ class Xgb:
         # average the outputs if n_samples is more than one
         if self.n_samples == 1:
             self.output = output
-            self.multi_outputs = [list(output)]
+            if output:
+                self.multi_outputs = [list(output)]
+            else:
+                self.multi_outputs = None
         else:
             self.output = np.mean(output_list, axis=0)
             self.multi_outputs = output_list
