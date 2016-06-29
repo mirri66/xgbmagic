@@ -138,6 +138,7 @@ class Xgb:
         # prediction
         print('## predicting from test set')
         output_list = []
+        output = None
         for idx, ns in enumerate(range(self.n_samples)):
             if self.n_samples == 1:
                 xgb = self
