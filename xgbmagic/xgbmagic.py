@@ -296,13 +296,16 @@ class Xgb:
             if include_actual:
                 headers.append('actual')
             writer.writerow(headers)
-            for idx, value in enumerate(self.output):
-                test_id = self.test_df[self.id_column][idx]
-                test_output = self.output[idx]
-                to_write = [test_id, test_output]
-                if include_actual:
-                    to_write.append(self.test_df[self.target_column][idx])
-                writer.writerow(to_write)
+            try:
+                for idx, value in enumerate(self.output):
+                    test_id = self.test_df[self.id_column][idx]
+                    test_output = self.output[idx]
+                    to_write = [test_id, test_output]
+                    if include_actual:
+                        to_write.append(self.test_df[self.target_column][idx])
+                    writer.writerow(to_write)
+            except:
+                print('write_csv failed')
 
     def save(self, filename='xgb.pkl'):
         joblib.dump(self, filename)
