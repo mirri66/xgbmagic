@@ -52,7 +52,7 @@ class Xgb:
                 self.num_training_rounds = num_training_rounds
                 self.prefix = prefix
                 # init the classifier:
-                if self.target_type == 'binary' or self.target_type == 'multiclass':
+                if self.target_type == 'binary':
                     self.scoring = 'auc'
                     self.clf = XGBClassifier(
                         learning_rate =0.1,
@@ -60,6 +60,16 @@ class Xgb:
                         subsample = 0.8,
                         colsample_bytree = 0.8,
                         objective = 'binary:logistic',
+                        scale_pos_weight = 1,
+                        seed = 123)
+                elif self.target_type == 'multiclass':
+                    self.scoring = 'merror'
+                    self.clf = XGBClassifier(
+                        learning_rate =0.1,
+                        n_estimators = num_training_rounds,
+                        subsample = 0.8,
+                        colsample_bytree = 0.8,
+                        objective = 'multi:softmax',
                         scale_pos_weight = 1,
                         seed = 123)
                 elif self.target_type == 'linear':
@@ -101,6 +111,7 @@ class Xgb:
                     cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
                         metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds, verbose_eval=self.verbose)
                 except:
+                    xgb_param['num_class'] = len(current_df[self.target_column].unique())
                     cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=self.clf.get_params()['n_estimators'], nfold=5,
                         metrics=[self.scoring], early_stopping_rounds=self.early_stopping_rounds)
                 self.clf.set_params(n_estimators=cvresult.shape[0])
@@ -109,10 +120,11 @@ class Xgb:
                 #Predict training set:
                 train_df_predictions = self.clf.predict(current_df[self.predictors])
 
-                if self.target_type == 'binary':
+                if self.target_type == 'binary' or self.target_type == 'multiclass':
                     train_df_predprob = self.clf.predict_proba(current_df[self.predictors])[:,1]
                     print("Accuracy : %.4g" % metrics.accuracy_score(current_df[self.target_column].values, train_df_predictions))
-                    print("AUC Score (Train): %f" % metrics.roc_auc_score(current_df[self.target_column], train_df_predprob))
+                    if self.target_type == 'binary':
+                        print("AUC Score (Train): %f" % metrics.roc_auc_score(current_df[self.target_column], train_df_predprob))
                 elif self.target_type == 'linear':
                     print("Mean squared error: %f" % metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions))
                     print("Root mean squared error: %f" % np.sqrt(metrics.mean_squared_error(current_df[self.target_column].values, train_df_predictions)))
@@ -318,4 +330,3 @@ class Xgb:
     def load(self, model_file='xgb.pkl'):
         xgb = joblib.load(model_file)
         return xgb
-
