@@ -37,7 +37,7 @@ Input parameters:
 * df (DataFrame): pandas dataframe
 * target_column (string): name of column containing the target parameter
 * id_column (string): name of column containing IDs
-* target_type (string): 'binary' for binary targets (classification), 'linear' for continuous targets (linear regression)
+* target_type (string): 'binary' for binary targets (classification), 'multiclass' for multiple classes (classification), 'linear' for continuous targets (linear regression)
 * categorical_columns (list of strings): a list of names of columns containing categorical data
 * numerical_columns (list of strings): a list of names of columns containing numerical data
 * drop_columns (list of strings): a list of names of columns to drop
