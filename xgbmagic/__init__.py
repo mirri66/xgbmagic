@@ -1,1 +1,1 @@
-from xgbmagic import Xgb
+from .xgbmagic import Xgb
