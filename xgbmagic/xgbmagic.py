@@ -241,7 +241,7 @@ class Xgb:
         # drop all those that are object type
         print('## dropping non-numerical columns')
         for col in df.columns:
-            if df[col].dtype == 'int64' or df[col].dtype == 'float64' or df[col].dtype == 'bool':
+            if df[col].dtype == 'int64' or df[col].dtype == 'float64' or df[col].dtype == 'bool' and col not in [self.id_column, self.target_column]:
                 pass
             else:
                 if self.verbose:
