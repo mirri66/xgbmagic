@@ -214,10 +214,11 @@ class Xgb:
             # drop columns that have no standard deviation (not informative)
             print('## dropping columns with no variation')
             for col in df.columns:
-                if df[col].dtype == 'int64' or df[col].dtype == 'float64':
-                    if df[col].std() == 0:
-                        print('will drop', col)
-                        self.cols_to_remove.append(col)
+                if col is not self.target_column:
+                    if df[col].dtype == 'int64' or df[col].dtype == 'float64':
+                        if df[col].std() == 0:
+                            print('will drop', col)
+                            self.cols_to_remove.append(col)
         if self.verbose and self.cols_to_remove:
             print('dropping the following columns:', self.cols_to_remove)
             df = df.drop(self.cols_to_remove, axis=1)
@@ -241,7 +242,7 @@ class Xgb:
         # drop all those that are object type
         print('## dropping non-numerical columns')
         for col in df.columns:
-            if df[col].dtype == 'int64' or df[col].dtype == 'float64' or df[col].dtype == 'bool' and col not in [self.id_column, self.target_column]:
+            if df[col].dtype == 'int64' or df[col].dtype == 'float64' or df[col].dtype == 'bool':
                 pass
             else:
                 if self.verbose:
