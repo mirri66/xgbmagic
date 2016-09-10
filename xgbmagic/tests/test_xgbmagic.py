@@ -1,3 +1,4 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
 import unittest
 import pandas as pd
 import xgbmagic
@@ -41,7 +42,7 @@ class TestXGB(unittest.TestCase):
         xgb = xgbmagic.Xgb(train_df, target_column='y', id_column='id', numeric_columns=numeric_list, drop_columns=drop_list, categorical_columns=cat_list, num_training_rounds=100, target_type='linear', verbose=True, prefix='test', sample_fraction=0.3, n_samples=2)
         xgb.train()
         output = xgb.predict(test_df)
-        print 'OUTPUT', output
+        print('OUTPUT', output)
         self.assertTrue(len(output) == len(test_dict['id']))
         multi_outputs = xgb.predict(test_df, return_multi_outputs=True)
         self.assertTrue(len(multi_outputs) == xgb.n_samples)
@@ -54,7 +55,7 @@ class TestXGB(unittest.TestCase):
         xgb = xgbmagic.Xgb(bin_train_df, target_column='y', id_column='id', numeric_columns=numeric_list, drop_columns=drop_list, categorical_columns=cat_list, num_training_rounds=100, target_type='binary', verbose=True, prefix='test', sample_fraction=0.3, n_samples=2)
         xgb.train()
         output = xgb.predict(bin_test_df)
-        print 'OUTPUT', output
+        print('OUTPUT', output)
         self.assertTrue(len(output) == len(bin_test_dict['id']))
 
 
